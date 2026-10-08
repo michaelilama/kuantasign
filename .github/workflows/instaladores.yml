@@ -35,8 +35,23 @@ jobs:
           targets: ${{ matrix.so == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: app/src-tauri }
+      # Mac: firma con «Developer ID Application» de Kuanta Bridge y notarización de Apple
+      # (clave de API de App Store Connect), para que abra sin avisos al descargarla.
+      - name: Clave de notarización (Mac)
+        if: matrix.so == 'macos-latest'
+        shell: bash
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "${{ secrets.APPLE_API_KEY_P8 }}" > ~/private_keys/AuthKey.p8
+          echo "APPLE_API_KEY_PATH=$HOME/private_keys/AuthKey.p8" >> "$GITHUB_ENV"
       - name: Compilar
         working-directory: app
+        env:
+          APPLE_CERTIFICATE: ${{ matrix.so == 'macos-latest' && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ matrix.so == 'macos-latest' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ matrix.so == 'macos-latest' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_API_KEY: ${{ matrix.so == 'macos-latest' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_ISSUER: ${{ matrix.so == 'macos-latest' && secrets.APPLE_API_ISSUER || '' }}
         run: npx --yes @tauri-apps/cli@2 build ${{ matrix.args }}
       - name: Publicar en la versión
         shell: bash

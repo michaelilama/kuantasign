@@ -1,6 +1,6 @@
 [package]
 name = "kuantasign"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "KuantaSign: firma PDFs de K360 con la tarjeta de Firma Digital de Costa Rica"
 license = "GPL-3.0-or-later"
