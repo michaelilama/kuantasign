@@ -53,14 +53,29 @@ jobs:
           APPLE_API_KEY: ${{ matrix.so == 'macos-latest' && secrets.APPLE_API_KEY || '' }}
           APPLE_API_ISSUER: ${{ matrix.so == 'macos-latest' && secrets.APPLE_API_ISSUER || '' }}
         run: npx --yes @tauri-apps/cli@2 build ${{ matrix.args }}
-      - name: Publicar en la versión
+      - name: Guardar el instalador
         shell: bash
+        run: cp ${{ matrix.origen }} "${{ matrix.nombre }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.nombre }}
+          path: ${{ matrix.nombre }}
+
+  # La versión se publica recién cuando están TODOS los instaladores: si se publica con uno
+  # solo, «latest» apunta a una versión sin el otro y la descarga desde K360 da 404.
+  publicar:
+    needs: compilar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: instaladores, merge-multiple: true }
+      - name: Publicar en la versión
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
           TAG="${GITHUB_REF_NAME}"
           [[ "$TAG" == v* ]] || TAG="v$VERSION"
-          cp ${{ matrix.origen }} "${{ matrix.nombre }}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "KuantaSign $VERSION" --notes "Instaladores de KuantaSign $VERSION" || true
-          gh release upload "$TAG" "${{ matrix.nombre }}" --clobber
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "KuantaSign $VERSION" --notes "Instaladores de KuantaSign $VERSION"
+          gh release upload "$TAG" instaladores/* --clobber
