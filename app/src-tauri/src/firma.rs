@@ -13,7 +13,7 @@ use der::asn1::{Any, OctetString, SetOfVec};
 use der::{Decode, DecodePem, Encode, Sequence};
 use sha2::{Digest, Sha256};
 use spki::AlgorithmIdentifierOwned;
-use std::fs;
+
 use x509_cert::attr::Attribute;
 use x509_cert::ext::pkix::name::GeneralName;
 use x509_cert::serial_number::SerialNumber;
@@ -102,7 +102,7 @@ impl Firmante for Tarjeta {
 // ───────────────────────────── PDF ─────────────────────────────
 
 /// Escribe un objeto de lopdf como texto PDF (solo lo que aparece en catálogo y páginas).
-fn objeto_a_texto(o: &lopdf::Object) -> String {
+pub(crate) fn objeto_a_texto(o: &lopdf::Object) -> String {
     use lopdf::Object::*;
     match o {
         Null => "null".into(),
@@ -117,7 +117,7 @@ fn objeto_a_texto(o: &lopdf::Object) -> String {
         Stream(_) => "null".into(),
     }
 }
-fn dict_a_texto(d: &lopdf::Dictionary) -> String {
+pub(crate) fn dict_a_texto(d: &lopdf::Dictionary) -> String {
     let mut s = String::from("<<");
     for (k, v) in d.iter() { s.push_str(&format!(" /{} {}", String::from_utf8_lossy(k), objeto_a_texto(v))); }
     s.push_str(" >>");
@@ -367,7 +367,7 @@ fn preparar_pdf(original: &[u8], nombre: &str, cedula: &str, recuadro: Option<Re
 fn buscar(h: &[u8], desde: usize, aguja: &[u8]) -> Result<usize> {
     h[desde..].windows(aguja.len()).position(|w| w == aguja).map(|p| p + desde).ok_or_else(|| anyhow!("no se encontró {}", String::from_utf8_lossy(aguja)))
 }
-fn encontrar_startxref(pdf: &[u8]) -> Result<usize> {
+pub(crate) fn encontrar_startxref(pdf: &[u8]) -> Result<usize> {
     let pos = pdf.windows(9).rposition(|w| w == b"startxref").ok_or_else(|| anyhow!("PDF sin startxref"))?;
     let resto = String::from_utf8_lossy(&pdf[pos + 9..]);
     Ok(resto.split_whitespace().next().ok_or_else(|| anyhow!("startxref vacío"))?.parse()?)
@@ -514,5 +514,10 @@ pub fn firmar_pdf(original: &[u8], recuadro: Option<Recuadro>, pin: &str) -> Res
     let hexa = hex::encode(&cms);
     if hexa.len() > HUECO * 2 { bail!("La firma no cabe en el documento"); }
     p.bytes[p.inicio_contents + 1..p.inicio_contents + 1 + hexa.len()].copy_from_slice(hexa.as_bytes());
-    Ok(p.bytes)
+    // Validación a largo plazo (cadenas completas + no revocación). Si el SINPE o el MICITT no
+    // responden, la firma igual es válida: se entrega sin LTV y queda anotado en el registro.
+    match crate::ltv::agregar(&p.bytes) {
+        Ok(con_ltv) => Ok(con_ltv),
+        Err(e) => { eprintln!("[KuantaSign] Firma sin LTV: {e:#}"); Ok(p.bytes) }
+    }
 }
