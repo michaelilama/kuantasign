@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>KuantaSign</title>
+<style>
+  :root { --verde:#0B6B45; --verde2:#12965E; --tinta:#14201a; --gris:#5b6661; --linea:#d9e2de; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:#fff; font-family:-apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--tinta); user-select:none; }
+  .cab { display:flex; align-items:center; gap:9px; padding:14px 18px; background:#f2f8f5; border-bottom:1px solid var(--linea); }
+  .cab .marca { font-weight:700; font-size:17px; letter-spacing:-.01em; } .cab .marca span { color:var(--verde2); }
+  .cab .lado { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--gris); text-align:right; line-height:1.25; }
+  .cab .lado img { width:22px; height:22px; }
+  main { padding:16px 18px 14px; }
+  .et { font-size:11px; color:var(--gris); }
+  .doc { font-size:13.5px; font-weight:600; margin:2px 0 12px; }
+  .quien { display:flex; align-items:center; gap:10px; padding:9px 11px; border:1px solid var(--linea); border-radius:9px; margin-bottom:12px; }
+  .quien .nombre { font-size:14px; font-weight:700; } .quien .sub { font-size:11px; color:var(--gris); }
+  label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; }
+  input { width:100%; font-size:20px; letter-spacing:.35em; padding:9px 12px; border:1.5px solid var(--linea); border-radius:9px; outline:none; }
+  input:focus { border-color:var(--verde2); box-shadow:0 0 0 3px rgba(18,150,94,.15); }
+  .error { color:#b42318; font-size:12px; min-height:16px; margin-top:6px; }
+  .acciones { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+  button { font-size:13.5px; font-weight:600; padding:9px 18px; border-radius:9px; cursor:pointer; background:#fff; }
+  .cancelar { border:1px solid #cfd6d3; color:#3d4642; }
+  .firmar { border:1.5px solid var(--verde2); color:var(--verde); display:inline-flex; align-items:center; gap:7px; }
+  .firmar:disabled { opacity:.55; cursor:default; }
+  .giro { width:14px; height:14px; border:2px solid var(--verde2); border-right-color:transparent; border-radius:50%; animation:g .8s linear infinite; display:none; }
+  .trabajando .giro { display:inline-block; }
+  @keyframes g { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="cab">
+    <svg width="26" height="26" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#12965E"/><path d="M30 62 L58 34 L68 44 L40 72 L28 74 Z" fill="#fff"/><path d="M61 31 l5 -5 a5 5 0 0 1 7 0 l3 3 a5 5 0 0 1 0 7 l-5 5 z" fill="#fff"/><path d="M26 80 h48" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
+    <div class="marca">Kuanta<span>Sign</span></div>
+    <div class="lado"><div>Firma Digital Certificada<br>Banco Central de Costa Rica</div><img src="gaudi.png" alt=""></div>
+  </div>
+  <main>
+    <div class="et">Firma solicitada por K360 para</div>
+    <div class="doc" id="doc">—</div>
+    <div class="quien">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6B45" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4M7 11h10"/></svg>
+      <div><div class="nombre" id="titular">—</div><div class="sub">Tarjeta de Firma Digital</div></div>
+    </div>
+    <label for="pin">PIN de la tarjeta</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" autofocus>
+    <div class="error" id="error"></div>
+    <div class="acciones">
+      <button class="cancelar" id="cancelar">Cancelar</button>
+      <button class="firmar" id="firmar"><span class="giro"></span><span id="txt">Firmar</span></button>
+    </div>
+  </main>
+<script>
+  const { invoke } = window.__TAURI__.core;
+  const $ = (id) => document.getElementById(id);
+  invoke('datos_pedido').then((d) => { if (d) { $('doc').textContent = d.documento; $('titular').textContent = d.titular; } });
+  const firmar = async () => {
+    const pin = $('pin').value.trim();
+    if (!pin) { $('error').textContent = 'Digite el PIN.'; return; }
+    $('error').textContent = ''; $('firmar').disabled = true; $('firmar').classList.add('trabajando'); $('txt').textContent = 'Firmando…';
+    try { await invoke('firmar_con_pin', { pin }); }
+    catch (e) { $('error').textContent = String(e); $('pin').value = ''; $('pin').focus(); $('firmar').disabled = false; $('firmar').classList.remove('trabajando'); $('txt').textContent = 'Firmar'; }
+  };
+  $('firmar').onclick = firmar;
+  $('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') firmar(); if (e.key === 'Escape') invoke('cancelar'); });
+  $('cancelar').onclick = () => invoke('cancelar');
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+[package]
+name = "kuantasign"
+version = "0.1.0"
+edition = "2021"
+description = "KuantaSign: firma PDFs de K360 con la tarjeta de Firma Digital de Costa Rica"
+license = "GPL-3.0-or-later"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tiny_http = "0.12"
+base64 = "0.22"
+cryptoki = "0.7"
+cms = { version = "0.2", features = ["std"] }
+x509-cert = { version = "0.2", features = ["std"] }
+der = { version = "0.7", features = ["std", "derive", "oid", "pem"] }
+spki = "0.7"
+const-oid = { version = "0.9", features = ["db"] }
+sha2 = "0.10"
+lopdf = "0.34"
+ureq = "2"
+rand = "0.8"
+anyhow = "1"
+hex = "0.4"
+chrono = "0.4"
+png = "0.17"
+flate2 = "1"

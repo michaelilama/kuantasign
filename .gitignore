@@ -1,0 +1,8 @@
+target/
+**/target/
+app/src-tauri/gen/
+prueba/
+*.pdf
+*.p12
+*.key
+.DS_Store

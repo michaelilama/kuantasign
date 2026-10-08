@@ -1,0 +1,26 @@
+[package]
+name = "prueba-firma"
+version = "0.1.0"
+edition = "2021"
+description = "Prueba de KuantaSign: firma PAdES (Firma Digital CR) desde Rust con la tarjeta (PKCS#11)"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+cryptoki = "0.7"
+cms = { version = "0.2", features = ["std"] }
+x509-cert = { version = "0.2", features = ["std"] }
+der = { version = "0.7", features = ["std", "derive", "oid", "pem"] }
+spki = "0.7"
+const-oid = { version = "0.9", features = ["db"] }
+sha2 = "0.10"
+lopdf = "0.34"
+ureq = "2"
+rsa = { version = "0.9", features = ["sha2"] }
+p12-keystore = "0.1"
+rand = "0.8"
+anyhow = "1"
+hex = "0.4"
+rpassword = "7"
+chrono = "0.4"
+png = "0.17"
+flate2 = "1"
