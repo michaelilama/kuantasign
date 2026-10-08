@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "KuantaSign",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.kuantabridge.kuantasign",
   "build": { "frontendDist": "../dist" },
   "app": {
@@ -17,6 +17,6 @@
     "copyright": "GPL-3.0-or-later · basado en Firmador (firmador.libre.cr)",
     "category": "Productivity",
     "shortDescription": "Firma digital de documentos de K360",
-    "macOS": { "minimumSystemVersion": "11.0" }
+    "macOS": { "minimumSystemVersion": "11.0", "entitlements": "./Entitlements.plist" }
   }
 }

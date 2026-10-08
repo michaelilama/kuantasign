@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- El controlador de la tarjeta (PKCS#11: IDEMIA libidop11.dylib, Athena…) lo firma su
+	     fabricante, no Kuanta. Con el «hardened runtime» que exige la notarización, macOS solo
+	     deja cargar librerías del mismo equipo de Apple y la firma falla con «different Team IDs». -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>
