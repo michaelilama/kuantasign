@@ -1,9 +1,9 @@
-//! KuantaSign: firma con la tarjeta de Firma Digital los documentos que K360 le pide.
+//! KuantaSign: firma con la tarjeta de Firma Digital los documentos que K360 y Finance 360 le piden.
 //!
 //! Vive en la bandeja (en la Mac, en la barra de arriba) y escucha SOLO en 127.0.0.1:3517.
 //! K360 le manda el PDF y el recuadro que la persona dibujó en el modal; KuantaSign muestra una
 //! ventanita con quién firma y el PIN, firma en formato PAdES con sello de tiempo del SINPE y le
-//! devuelve el PDF firmado. Solo atiende a los sitios de Kuanta (lista ORIGENES).
+//! devuelve el PDF firmado. Solo atiende a los sitios de Kuanta (lista ORIGENES y las cuentas de Finance 360).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod firma;
@@ -21,9 +21,21 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Sitios que pueden pedir firmas. Cualquier otro recibe 403.
 const ORIGENES: &[&str] = &[
     "https://payroll.kuantabridge.com",
+    "https://finance360.cr",
     "http://localhost:50001",
     "http://127.0.0.1:50001",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ];
+
+/// Además de la lista, cualquier cuenta de Finance 360 (https://<cuenta>.finance360.cr).
+fn origen_permitido(origen: &str) -> bool {
+    if ORIGENES.contains(&origen) { return true; }
+    match origen.strip_prefix("https://").and_then(|h| h.strip_suffix(".finance360.cr")) {
+        Some(sub) => !sub.is_empty() && sub.split('.').all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')),
+        None => false,
+    }
+}
 
 #[derive(Deserialize)]
 struct PedidoFirma { pdf: String, documento: Option<String>, recuadro: Option<RecuadroJson> }
@@ -121,7 +133,7 @@ fn servidor(app: AppHandle) {
     };
     for mut req in srv.incoming_requests() {
         let origen = req.headers().iter().find(|h| h.field.equiv("Origin")).map(|h| h.value.as_str().to_string()).unwrap_or_default();
-        if !ORIGENES.contains(&origen.as_str()) {
+        if !origen_permitido(&origen) {
             let _ = req.respond(tiny_http::Response::from_string("Origen no autorizado").with_status_code(403));
             continue;
         }
@@ -162,6 +174,23 @@ fn servidor(app: AppHandle) {
             }
             _ => responder(req, &origen, 404, serde_json::json!({"error": "No existe"})),
         }
+    }
+}
+
+#[cfg(test)]
+mod pruebas {
+    use super::origen_permitido;
+    #[test]
+    fn origenes() {
+        assert!(origen_permitido("https://payroll.kuantabridge.com"));
+        assert!(origen_permitido("https://grupoempresarial.finance360.cr"));
+        assert!(origen_permitido("https://app.finance360.cr"));
+        assert!(origen_permitido("https://finance360.cr"));
+        assert!(!origen_permitido("http://grupoempresarial.finance360.cr"));
+        assert!(!origen_permitido("https://.finance360.cr"));
+        assert!(!origen_permitido("https://malo.finance360.cr.evil.com"));
+        assert!(!origen_permitido("https://evilfinance360.cr"));
+        assert!(!origen_permitido("https://a/b.finance360.cr"));
     }
 }
 
